@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 import pytchat
-from chat import stream_chat, stream_mock
+from API.chat import stream_chat, stream_mock
 
 
 app = FastAPI()

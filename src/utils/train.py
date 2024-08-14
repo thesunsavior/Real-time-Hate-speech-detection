@@ -1,3 +1,4 @@
+import tqdm
 import torch
 
 
@@ -19,6 +20,10 @@ def load_checkpoint(model, optimizer, filename="checkpoint.pth"):
     loss = checkpoint["loss"]
     return model, optimizer, epoch, loss
 
+
+def load_model(model, filename="model.pth"):
+    model.load_state_dict(torch.load(filename))
+    return model
 
 def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs=5):
     train_losses = []

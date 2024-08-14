@@ -1,6 +1,3 @@
-import pytchat
-
-
 def stream_chat(chat_obj):
     while chat_obj.is_alive():
         for c in chat_obj.get().items:

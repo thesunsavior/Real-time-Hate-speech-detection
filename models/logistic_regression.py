@@ -14,7 +14,7 @@ class LogisticRegression:
         self.train_df = train_df
         self.valid_df = valid_df
 
-    def evaluate(self):
+    def train(self):
         x_train = self.vectorizer.transform(self.train_df['free_text'])
         x_valid = self.vectorizer.transform(self.valid_df['free_text'])
 
