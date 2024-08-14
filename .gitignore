@@ -67,3 +67,6 @@ secrets.txt
 # Ignore virtual environment
 .venv/
 
+*.pyc
+*.pt
+*.pth
