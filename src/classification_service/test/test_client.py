@@ -1,6 +1,5 @@
 import httpx
 import asyncio
-from API.chat import stream
 
 
 async def receive_chat_stream(video_id: str):
