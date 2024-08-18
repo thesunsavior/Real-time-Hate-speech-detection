@@ -1,24 +1,20 @@
 import pytchat
 
+import pickle
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 from chat import stream_chat
-from utils.preprocessing import preprocess_df
 from model.logistic_regression import LogisticRegression
 from sentence_classification import produce_classification_inference
 from config import Config
 
 config = Config()
-# preprocess data
-df_train = pd.read_csv(f"{config.DATA_FOLDER}/vihsd/train.csv")
-df_valid = pd.read_csv(f"{config.DATA_FOLDER}/vihsd/dev.csv")
+input_model = pickle.load(open(f"{config.MODEL_FOLDER}/model.pkl", "rb"))
+vectorizer = pickle.load(open(f"{config.MODEL_FOLDER}/vectorizer.pkl", "rb"))
 
-train_df = preprocess_df(df_train)
-val_df = preprocess_df(df_valid)
-
-model = LogisticRegression(train_df, val_df)
+model = LogisticRegression(input_model, vectorizer)
 infer_fn = produce_classification_inference(model)
 
 app = FastAPI()

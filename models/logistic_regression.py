@@ -1,14 +1,14 @@
 import torch
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression as sk_LogReg
 from pyvi import ViTokenizer
 
 
 class LogisticRegression (torch.nn.Module):
     def __init__(self, train_df, valid_df):
         super(LogisticRegression, self).__init__()
-        self.model = LogisticRegression()
+        self.model = sk_LogReg()
 
         self.vectorizer = CountVectorizer(tokenizer=ViTokenizer.tokenize)
         self.vectorizer.fit(train_df['free_text'])
