@@ -18,7 +18,7 @@ model_ckpt_paths = {
 }
 
 
-def get_model(model_name):
+def get_model(model_name: str):
     model_name = model_name.lower()
     model_hf = model_huggingface.get(model_name)
     if model_hf is None:
@@ -36,4 +36,4 @@ def get_model(model_name):
     checkpoint = torch.load(model_ckpt_path, map_location='cpu')
     model.load_state_dict(checkpoint)
 
-    return model
+    return model, tokenizer
