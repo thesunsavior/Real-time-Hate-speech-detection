@@ -1,8 +1,7 @@
 import pytchat
 
 import pickle
-import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.responses import StreamingResponse
 
 from chat import stream_chat
@@ -25,7 +24,12 @@ def read_root():
     return {"Establish fastapi"}
 
 
-@app.get("/chat/{video_id}")
-async def read_chat(video_id: str):
+@app.websocket("/ws/{video_id}")
+async def read_chat(websocket: WebSocket, video_id: str):
+    await websocket.accept()
     chat = pytchat.create(video_id=video_id)
-    return StreamingResponse(stream_chat(chat, infer_fn), media_type="text/event-stream")
+    while chat.is_alive():
+        for c in chat.get().items:
+            message = c.message
+            message = infer_fn(message)
+            await websocket.send_text(message)
