@@ -76,8 +76,6 @@ if __name__ == '__main__':
     print(tokens)
 
     inp = [tokenizer(text,
-                     #  padding='max_length',
-                     #  max_length=64, truncation=True,
                      return_tensors="pt")for text in tokens]
 
     threshold = 0.2

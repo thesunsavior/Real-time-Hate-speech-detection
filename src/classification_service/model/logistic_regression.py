@@ -1,8 +1,4 @@
 import torch
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.linear_model import LogisticRegression as sk_LogReg
-from pyvi import ViTokenizer
 
 
 class LogisticRegression (torch.nn.Module):
