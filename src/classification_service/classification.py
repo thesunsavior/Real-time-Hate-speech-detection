@@ -2,9 +2,7 @@ import pytchat
 
 import pickle
 from fastapi import FastAPI, WebSocket
-from fastapi.responses import StreamingResponse
 
-from chat import stream_chat
 from model.logistic_regression import LogisticRegression
 from sentence_classification import produce_classification_inference
 from config import Config
