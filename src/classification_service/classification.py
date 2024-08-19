@@ -13,8 +13,10 @@ from config import Config
 config = Config()
 
 # Load up the model
-input_model = pickle.load(open(f"{config.MODEL_FOLDER}/model.pkl", "rb"))
-vectorizer = pickle.load(open(f"{config.MODEL_FOLDER}/vectorizer.pkl", "rb"))
+input_model = pickle.load(
+    open(f"{config.MODEL_FOLDER}/checkpoint/model.pkl", "rb"))
+vectorizer = pickle.load(
+    open(f"{config.MODEL_FOLDER}/checkpoint/vectorizer.pkl", "rb"))
 
 model = LogisticRegression(input_model, vectorizer)
 infer_fn = produce_classification_inference(model)
@@ -40,7 +42,9 @@ async def read_chat(websocket: WebSocket, video_id: str):
         for c in chat.get().items:
             message = c.message
             prediction = infer_fn(message)
-            json_message = {"id": c.id, "prediction": prediction}
+            json_message = {"id": c.id,
+                            "message": message,
+                            "prediction": prediction}
 
             # directly send the message to the client
             await websocket.send_text(json.dumps(json_message))
