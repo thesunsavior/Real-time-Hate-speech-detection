@@ -6,39 +6,41 @@ from models.bert import MultiTaskModel
 from vncorenlp import VnCoreNLP
 
 
-def spans_inference(model, tokenizer, input_text, threshold=0.2):
-    model.eval()
+def spans_inference(model, tokenizer):
+    def infer_fn(input_text, threshold=0.2):
+      model.eval()
 
-    annotator = VnCoreNLP("vncorenlp/VnCoreNLP-1.1.1.jar",
-                          annotators="wseg", max_heap_size='-Xmx500m')
-    annotator_text = annotator.tokenize(input_text)
-    tokens = []
-    for i in range(len(annotator_text)):
-        for j in range(len(annotator_text[i])):
-            tokens.append(annotator_text[i][j])
+      annotator = VnCoreNLP("vncorenlp/VnCoreNLP-1.1.1.jar",
+                            annotators="wseg", max_heap_size='-Xmx500m')
+      annotator_text = annotator.tokenize(input_text)
+      tokens = []
+      for i in range(len(annotator_text)):
+          for j in range(len(annotator_text[i])):
+              tokens.append(annotator_text[i][j])
 
-    inp = [tokenizer(text, return_tensors="pt")for text in tokens]
+      inp = [tokenizer(text, return_tensors="pt")for text in tokens]
 
-    labels = []
-    for i in range(len(inp)):
-        with torch.no_grad():
-            inp_ids = inp[i]['input_ids'].squeeze(1)
-            inp_att_mask = inp[i]['attention_mask']
-            output = model(inp_ids, inp_att_mask)
+      labels = []
+      for i in range(len(inp)):
+          with torch.no_grad():
+              inp_ids = inp[i]['input_ids'].squeeze(1)
+              inp_att_mask = inp[i]['attention_mask']
+              output = model(inp_ids, inp_att_mask)
 
-            flatten_output = output.squeeze().cpu().numpy().flatten()
+              flatten_output = output.squeeze().cpu().numpy().flatten()
 
-            kt = False
-            for i in range(len(flatten_output)):
-                if flatten_output[i] > threshold:
-                    labels.append(1)
-                    kt = True
-                    break
+              kt = False
+              for i in range(len(flatten_output)):
+                  if flatten_output[i] > threshold:
+                      labels.append(1)
+                      kt = True
+                      break
 
-            if kt == False:
-                labels.append(0)
+              if kt == False:
+                  labels.append(0)
 
-    return labels
+      return labels
+    return infer_fn
 
 
 if __name__ == '__main__':

@@ -6,3 +6,9 @@ class Config:
         'MODEL_FOLDER') or 'src/spans_tagging_service/models'
     MODEL_NAME = os.environ.get(
         'MODEL_NAME') or 'distilbert'
+
+    SPAN_TAGGING_QUEUE = os.environ.get('SPAN_TAGGING_QUEUE') or 'span_tagging'
+
+    REDIS_HOST = os.environ.get('REDIS_HOST') or 'redis'
+    REDIS_PORT = os.environ.get('REDIS_PORT') or 6379
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD') or None
