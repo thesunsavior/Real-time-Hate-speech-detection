@@ -12,9 +12,9 @@ model_huggingface = {
     "xlm-roberta": "xlm-roberta-base",
 }
 model_ckpt_paths = {
-    "distilbert": f"{config.MODEL_FOLDER}/DIstilBert_model_checkpoint.pt",
-    "phobert": f"{config.MODEL_FOLDER}/PhoBERT_model_checkpoint.pt",
-    "xlm-roberta": f"{config.MODEL_FOLDER}/XLM-RoBERTa_model_checkpoint.pt",
+    "distilbert": f"{config.MODEL_FOLDER}/checkpoint/DIstilBert_model_checkpoint.pt",
+    "phobert": f"{config.MODEL_FOLDER}/checkpoint/PhoBERT_model_checkpoint.pt",
+    "xlm-roberta": f"{config.MODEL_FOLDER}/checkpoint/XLM-RoBERTa_model_checkpoint.pt",
 }
 
 
