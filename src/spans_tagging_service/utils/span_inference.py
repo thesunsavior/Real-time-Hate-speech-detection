@@ -4,13 +4,15 @@ from transformers import AutoModel, AutoTokenizer
 from models.bert import MultiTaskModel
 
 from vncorenlp import VnCoreNLP
+from config import Config
 
+conf  = Config()
 
 def spans_inference(model, tokenizer):
     def infer_fn(input_text, threshold=0.2):
       model.eval()
 
-      annotator = VnCoreNLP("vncorenlp/VnCoreNLP-1.1.1.jar",
+      annotator = VnCoreNLP(f"{conf.VNCORE_NLP_PATH}/VnCoreNLP-1.1.1.jar",
                             annotators="wseg", max_heap_size='-Xmx500m')
       annotator_text = annotator.tokenize(input_text)
       tokens = []
@@ -46,8 +48,9 @@ def spans_inference(model, tokenizer):
 if __name__ == '__main__':
     test_path = "data/Sequence_labeling_based_version/Word/test_BIO_Word.csv"
     model_name = "distilbert/distilbert-base-multilingual-cased"
+    
     # Define the path to the checkpoint file
-    checkpoint_path = 'DIstilBert_model_checkpoint.pt'
+    checkpoint_path = '/Users/trungpham/Public/Real-time-Hate-speech-detection/src/spans_tagging_service/models/checkpoint/DIstilBert_model_checkpoint.pt'
 
     input_model = AutoModel.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -67,8 +70,8 @@ if __name__ == '__main__':
     # Prepare the input data
     input_text = "vãi lồn Thảo ơiii"
 
-    annotator = VnCoreNLP("vncorenlp/VnCoreNLP-1.1.1.jar",
-                          annotators="wseg", max_heap_size='-Xmx500m')
+    annotator = VnCoreNLP(f"{conf.VNCORE_NLP_PATH}/VnCoreNLP-1.1.1.jar",
+                            annotators="wseg", max_heap_size='-Xmx500m')
     annotator_text = annotator.tokenize(input_text)
     tokens = []
     for i in range(len(annotator_text)):

@@ -7,8 +7,12 @@ import sys
 from redis_om import get_redis_connection, HashModel
 
 from config import Config
-from model_factory import get_model
-from span_inference import spans_inference
+from utils.model_factory import get_model
+from utils.span_inference import spans_inference
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 config = Config()
