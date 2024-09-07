@@ -2,12 +2,13 @@ import pika
 import pickle
 import pytchat
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, BackgroundTasks
 
 import json
 
 from model.logistic_regression import LogisticRegression
 from sentence_classification import produce_classification_inference
+from utils.task import queue_message
 from config import Config
 
 config = Config()
@@ -24,6 +25,7 @@ infer_fn = produce_classification_inference(model)
 # Set up queue connection
 connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
 channel = connection.channel()
+channel.queue_declare(queue='classification')
 
 app = FastAPI()
 
@@ -36,26 +38,26 @@ def read_root():
 @app.websocket("/ws/{video_id}")
 async def read_chat(websocket: WebSocket, video_id: str):
     await websocket.accept()
+    
     chat = pytchat.create(video_id=video_id)
+    try:
+        while chat.is_alive():
+            for c in chat.get().items:
+                message = c.message
+                prediction = infer_fn(message)
+                json_message = {"id": c.id,
+                                "video_id": video_id,
+                                "message": message,
+                                "prediction": prediction}
 
-    while chat.is_alive():
-        for c in chat.get().items:
-            message = c.message
-            prediction = infer_fn(message)
-            json_message = {"id": c.id,
-                            "message": message,
-                            "prediction": prediction}
-
-            # directly send the message to the client
-            await websocket.send_text(json.dumps(json_message))
-
-            # queue the message if prediction is above threshold
-            if prediction > config.THRESHOLD:
-                channel.basic_publish(
-                    exchange="",
-                    routing_key="classification",
-                    body=json.dumps(json_message),
-                    properties=pika.BasicProperties(
-                        delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-                    ),
-                )
+                # queue the message if prediction is above threshold
+                if prediction > config.THRESHOLD:
+                    BackgroundTasks.add_task(
+                        queue_message, "classification", json_message)
+                    
+                # directly send the message to the client
+                await websocket.send_text(json.dumps(json_message))
+    except BaseException as e:  # asyncio.TimeoutError and ws.close()
+        print(e)
+    finally:                
+        await websocket.close()
