@@ -2,7 +2,8 @@ import json
 import pika
 
 # Define the function to publish to RabbitMQ
-def queue_message(channel, routing_key:str, json_message: dict):
+async def queue_message(channel, routing_key:str, json_message: dict):
+    print (f"Publishing message to queue: {json_message}")
     # Publish the message to the queue
     channel.basic_publish(
         exchange="",

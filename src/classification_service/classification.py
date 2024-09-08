@@ -1,16 +1,19 @@
-import pika
+import json
 import pickle
 import pytchat
+import pika
 
-from fastapi import FastAPI, WebSocket, BackgroundTasks
+from dotenv import load_dotenv
+from fastapi import FastAPI, WebSocket, BackgroundTasks, WebSocketDisconnect
 
-import json
-
+from connection_manager import ConnectionManager
 from model.logistic_regression import LogisticRegression
 from sentence_classification import produce_classification_inference
 from utils.task import queue_message
 from config import Config
 
+
+load_dotenv()
 config = Config()
 
 # Load up the model
@@ -22,12 +25,21 @@ vectorizer = pickle.load(
 model = LogisticRegression(input_model, vectorizer)
 infer_fn = produce_classification_inference(model)
 
+
 # Set up queue connection
-connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+connection_params = pika.ConnectionParameters(
+    host='localhost',
+    port=5672,
+)
+
+connection = pika.BlockingConnection(connection_params)
 channel = connection.channel()
 channel.queue_declare(queue='classification')
 
 app = FastAPI()
+
+# Connection manager to keep track of active connections
+connection_manager = ConnectionManager()
 
 
 @app.get("/")
@@ -36,28 +48,30 @@ def read_root():
 
 
 @app.websocket("/ws/{video_id}")
-async def read_chat(websocket: WebSocket, video_id: str):
-    await websocket.accept()
-    
+async def read_chat(websocket: WebSocket, video_id: str, background_tasks: BackgroundTasks):
+    if video_id not in connection_manager.video_active_connections:
+        connection_manager.add_video(video_id)
+
+    await connection_manager.connect(websocket, video_id)
+
     chat = pytchat.create(video_id=video_id)
     try:
         while chat.is_alive():
             for c in chat.get().items:
                 message = c.message
                 prediction = infer_fn(message)
-                json_message = {"id": c.id,
+                json_message = {"id": str(c.id),
                                 "video_id": video_id,
                                 "message": message,
-                                "prediction": prediction}
-
+                                "prediction": str(prediction)}
+                
                 # queue the message if prediction is above threshold
                 if prediction > config.THRESHOLD:
-                    BackgroundTasks.add_task(
-                        queue_message, "classification", json_message)
-                    
-                # directly send the message to the client
-                await websocket.send_text(json.dumps(json_message))
-    except BaseException as e:  # asyncio.TimeoutError and ws.close()
-        print(e)
-    finally:                
-        await websocket.close()
+                    background_tasks.add_task(
+                        queue_message, channel, "classification", json_message)
+
+                await connection_manager.broadcast(json.dumps(json_message), video_id)
+
+    except WebSocketDisconnect:  # asyncio.TimeoutError and ws.close()
+        connection_manager.disconnect(websocket, video_id)
+        print("client exited")
