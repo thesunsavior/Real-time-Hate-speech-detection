@@ -1,6 +1,7 @@
 FROM python:3.11-slim-buster
 
 RUN apt-get update && apt-get install -y --no-install-recommends --no-install-suggests \
+    redis-server \
     && pip install --no-cache-dir --upgrade pip \
 
 WORKDIR /app
@@ -10,4 +11,4 @@ COPY . /app
 
 EXPOSE 8000
 
-CMD ["python3", "classificaion.py"]
+CMD redis-server --daemonize yes && python3 classification.py

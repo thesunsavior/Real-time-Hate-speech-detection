@@ -1,20 +1,19 @@
-
-import pika
-import json
 import os
 import sys
+import json
+from dotenv import load_dotenv
+from typing import List
 
-from redis_om import get_redis_connection, HashModel
+
+import pika
+from redis_om import get_redis_connection, JsonModel
 
 from config import Config
 from utils.model_factory import get_model
 from utils.span_inference import spans_inference
 
-from dotenv import load_dotenv
 
 load_dotenv()
-
-
 config = Config()
 
 model, tokenizer = get_model(config.MODEL_NAME)
@@ -28,46 +27,51 @@ redis = get_redis_connection(
 )
 
 
-class SpanMessage(HashModel):
-    id: str
+class SpanMessage(JsonModel):
+    id: int
     message: str
-    spans: list
+    spans: List[int]
 
     class Meta:
         database = redis
 
+def callback(ch, method, properties, body):
+    body = body.decode("utf-8")
+    json_data = json.loads(body)
+
+    message_id = json_data["id"]
+    message = json_data["message"]
+    spans = infer_fn(message)
+
+    json_message = {"id": message_id, "message": message, "spans": spans}
+    print(json_message)
+    
+    # save to Redis
+    try:
+        span_message = SpanMessage(**json_message)
+        span_message.save()
+    except Exception as e:
+        print(e)
+        ch.basic_nack(delivery_tag=method.delivery_tag)
+    else:
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 def main():
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="rabbitmq"))
+    connection_params = pika.ConnectionParameters(
+        host='localhost',
+        port=5672,
+    )
+    connection = pika.BlockingConnection(connection_params)
     channel = connection.channel()
 
-    def callback(ch, method, properties, body):
-        body = body.decode("utf-8")
-        json_data = json.loads(body)
+    channel.basic_consume(
+        queue=config.SPAN_TAGGING_QUEUE, on_message_callback=callback
+    )
 
-        message_id = json_data["id"]
-        message = json_data["message"]
-        spans = infer_fn(message)
+    print("Waiting for messages. To exit press CTRL+C")
 
-        json_message = {"id": message_id, "message": message, "spans": spans}
-
-        # save to Redis
-        try:
-            span_message = SpanMessage(**json_message)
-            span_message.save()
-        except:
-            ch.basic_nack(delivery_tag=method.delivery_tag)
-        else:
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-
-        channel.basic_consume(
-            queue=config.SPAN_TAGGING_QUEUE, on_message_callback=callback
-        )
-
-        print("Waiting for messages. To exit press CTRL+C")
-
-        channel.start_consuming()
+    channel.start_consuming()
 
 
 if __name__ == "__main__":
